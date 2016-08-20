@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 if [ -z "$1" ]; then
   DEBUG=0
 else
@@ -8,7 +10,7 @@ else
 fi
 
 if [ -z "$PLAY_CMD" ]; then
-  PLAY_CMD="$HOME/src/play-2.0.8/play";
+  PLAY_CMD="$HOME/src/activator-1.3.6-minimal/activator";
 fi
 
 if [ ! -f $PLAY_CMD ]; then
@@ -17,7 +19,7 @@ if [ ! -f $PLAY_CMD ]; then
 fi
 
 if [ $DEBUG -eq 0 ]; then
-  rm -rf targed/staged
+  rm -rf target/universal
   $PLAY_CMD clean compile stage
 fi
 
@@ -29,11 +31,11 @@ rm -rf collins
 for dir in collins collins/lib collins/scripts $CONF_DIR; do
   mkdir $dir
 done
-for dir in $CONF_DIR/solr/conf $CONF_DIR/solr/data; do
+for dir in $CONF_DIR/solr/cores $CONF_DIR/solr/data $CONF_DIR/hazelcast; do
   mkdir -p $dir
 done
 
-cp staged/* collins/lib
+cp universal/stage/lib/* collins/lib
 
 # Copy over test data for use with populate.sh
 mkdir -p collins/test/resources
@@ -51,6 +53,8 @@ for conf in logger.xml permissions.yaml validations.conf; do
 done
 cp ../conf/production_starter.conf $CONF_DIR/production.conf
 
-cp -R ../conf/solr/conf/* $CONF_DIR/solr/conf/
+cp ../conf/solr/solr.xml $CONF_DIR/solr/
+cp -R ../conf/solr/cores/* $CONF_DIR/solr/cores/
 cp -R ../conf/evolutions/* $CONF_DIR/evolutions/
+cp ../conf/hazelcast/hazelcast.xml $CONF_DIR/hazelcast/
 zip -r collins.zip collins

@@ -21,7 +21,8 @@ module Collins; module Api
     def delete! asset_or_tag, options = {}
       asset = get_asset_or_tag asset_or_tag
       parameters = {
-        :reason => get_option(:reason, options, nil)
+        :reason => get_option(:reason, options, nil),
+        :nuke   => get_option(:nuke, options, false),
       }
       parameters = select_non_empty_parameters parameters
       logger.debug("Deleting asset #{asset.tag} with parameters #{parameters.inspect}")
@@ -119,6 +120,40 @@ module Collins; module Api
       http_get("/api/asset/#{asset.tag}/similar", params) do |response|
         parse_response response, :expects => 200, :as => :paginated do |json|
           json.map { |j| Collins::Asset.from_json(j) }
+        end
+      end
+    end
+
+    # Count number of assets matching the specified criteria
+    #
+    # @param [Hash] options Query options (same as in the "find" method)
+    # @return integer The number of assets matching the query
+    # @raise [UnexpectedResponseError] If the HTTP response code is not a 200
+    def count options = {}
+      # create a copy so that we do not modify the original options array
+      options = options.dup
+
+      if options.include? :size or options.include? :page
+        raise ExpectationFailedError.new "Do not specify 'size' or 'page' options when counting assets"
+      else
+        options[:size] = 1
+        options[:page] = 0
+      end
+
+      query = asset_hash_to_find_query options
+      params = query.to_a.map do |param|
+        key, val = param
+        if val.is_a?(Array)
+          val.map{|v| "#{key}=#{asset_escape_attribute(v)}"}.join("&")
+        else
+          "#{key}=#{asset_escape_attribute(val)}"
+        end
+      end.reject{|s| s.empty?}
+
+      logger.debug("Counting assets using params #{params.inspect}")
+      http_get("/api/assets", params) do |response|
+        parse_response response, :expects => 200, :as => :data do |json|
+          json["Pagination"]["TotalResults"].to_i
         end
       end
     end

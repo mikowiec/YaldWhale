@@ -1,20 +1,13 @@
-
 package collins.solr
-
-import collins.solr._
-import util.views.Formatter
 
 import java.util.Date
 
-import models.{Asset, AssetMeta, AssetMetaValue, AssetLog, IpAddresses, IpmiInfo, MetaWrapper, Truthy}
-import AssetMeta.ValueType
-import AssetMeta.ValueType._
+import collins.models.AssetLog
+import collins.solr.Solr.AssetSolrDocument
+import collins.solr.UpperCaseString.string2UpperCaseString
+import collins.util.views.Formatter
 
-import Solr._
-import SolrKeyFlag._
-
-
-class AssetLogSerializer extends SolrSerializer[AssetLog](AssetLogDocType) {
+object AssetLogSerializer extends SolrSerializer[AssetLog](AssetLogDocType) {
 
   val generatedFields = Nil
 
@@ -23,12 +16,10 @@ class AssetLogSerializer extends SolrSerializer[AssetLog](AssetLogDocType) {
   def getFields(log: AssetLog, indexTime: Date): AssetSolrDocument = Map[SolrKey, SolrValue](
     res("ID").get -> SolrIntValue(log.id.toInt),
     res("MESSAGE").get -> SolrStringValue(log.message, StrictUnquoted),
-    res("MESSAGE_TYPE").get -> SolrStringValue(log.message_type.toString, StrictUnquoted),
-    res("ASSET_TAG").get -> SolrStringValue(log.getAssetTag()),
-    res("CREATED").get -> SolrStringValue(Formatter.solrDateFormat(log.created))
-  )
+    res("MESSAGE_TYPE").get -> SolrStringValue(log.messageType.toString, StrictUnquoted),
+    res("ASSET_TAG").get -> SolrStringValue(log.assetTag),
+    res("CREATED").get -> SolrStringValue(Formatter.solrDateFormat(log.created)))
 
   def getUUID(log: AssetLog) = log.id
-
 
 }

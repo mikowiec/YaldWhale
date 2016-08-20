@@ -1,12 +1,13 @@
 package collins.callbacks
 
-import akka.actor._
+import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 
 trait AsyncCallbackManager extends CallbackManager {
-  protected def changeQueue: ActorRef
+  protected var changeQueue: Option[ActorRef]
 
-  override def fire(propertyName: String, oldValue: AnyRef, newValue: AnyRef) {
+  override def fire(propertyName: String, oldValue: CallbackDatumHolder, newValue: CallbackDatumHolder) {
     logger.debug("Async Firing %s".format(propertyName))
-    changeQueue ! CallbackMessage(propertyName, oldValue, newValue)
+    changeQueue.foreach(_ ! CallbackMessage(propertyName, oldValue, newValue))
   }
 }

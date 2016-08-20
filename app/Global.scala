@@ -1,21 +1,64 @@
-import play.api._
-import play.api.mvc._
-import collins.database.DatabasePlugin
+import scala.concurrent.Future
 
-import controllers.ApiResponse
-import util.{CryptoAccessor, Stats}
-import util.{BashOutput, HtmlOutput, JsonOutput, OutputType, TextOutput}
-import util.config.CryptoConfig
-import util.security.{AuthenticationAccessor, AuthenticationProvider, AuthenticationProviderConfig}
+import play.api.Application
+import play.api.GlobalSettings
+import play.api.Logger
+import play.api.Mode
+import play.api.Play
+import play.api.mvc.Handler
+import play.api.mvc.RequestHeader
+import play.api.mvc.Result
+import play.api.mvc.Results
+
+import collins.callbacks.Callback
+import collins.controllers.ApiResponse
+import collins.db.DB
+import collins.firehose.Firehose
+import collins.hazelcast.HazelcastHelper
+import collins.logging.LoggingHelper
+import collins.metrics.MetricsReporter
+import collins.models.cache.Cache
+import collins.solr.SolrHelper
+import collins.util.BashOutput
+import collins.util.CryptoAccessor
+import collins.util.JsonOutput
+import collins.util.OutputType
+import collins.util.Stats
+import collins.util.TextOutput
+import collins.util.config.CryptoConfig
+import collins.util.config.Registry
+import collins.util.security.AuthenticationAccessor
+import collins.util.security.AuthenticationProvider
+import collins.util.security.AuthenticationProviderConfig
 
 object Global extends GlobalSettings with AuthenticationAccessor with CryptoAccessor {
   private[this] val logger = Logger.logger
 
+  override def beforeStart(app: Application) {
+    // initialize DB session factory creation
+    DB.initialize(app)
+  }
+
   override def onStart(app: Application) {
-    val auth = AuthenticationProvider.get(AuthenticationProviderConfig.authType)
-    val key = CryptoConfig.key
-    setAuthentication(auth)
-    setCryptoKey(key)
+    Registry.setupRegistry(app)
+    HazelcastHelper.setupHazelcast()
+    Cache.setupCache()
+    setAuthentication(AuthenticationProvider.get(AuthenticationProviderConfig.authType))
+    setCryptoKey(CryptoConfig.key)
+    LoggingHelper.setupLogging(app)
+    Callback.setupCallbacks()
+    Firehose.setupFirehose()
+    SolrHelper.setupSolr()
+    MetricsReporter.setupMetrics()
+  }
+
+  override def onStop(app: Application) {
+    DB.shutdown()
+    Registry.terminateRegistry()
+    Cache.terminateCache()
+    HazelcastHelper.terminateHazelcast()
+    SolrHelper.terminateSolr()
+    Callback.terminateCallbacks()
   }
 
   override def onRouteRequest(request: RequestHeader): Option[Handler] = {
@@ -30,12 +73,10 @@ object Global extends GlobalSettings with AuthenticationAccessor with CryptoAcce
     } else {
       super.onRouteRequest(request)
     }
-
-    Play.maybeApplication.flatMap{_.plugin[DatabasePlugin]}.filter{_.enabled}.foreach{_.closeConnection}
     response
   }
 
-  override def onError(request: RequestHeader, ex: Throwable): Result = {
+  override def onError(request: RequestHeader, ex: Throwable): Future[Result] = {
     logger.warn("Unhandled exception", ex)
     val debugOutput = Play.maybeApplication.map {
       case app if app.mode == Mode.Dev => true
@@ -52,7 +93,7 @@ object Global extends GlobalSettings with AuthenticationAccessor with CryptoAcce
     }
   }
 
-  override def onHandlerNotFound(request: RequestHeader): Result = {
+  override def onHandlerNotFound(request: RequestHeader): Future[Result] = {
     logger.info("Unhandled URI: " + request.uri)
     val msg = "The specified path was invalid: " + request.path
     val status = Results.NotFound
@@ -66,7 +107,7 @@ object Global extends GlobalSettings with AuthenticationAccessor with CryptoAcce
     }
   }
 
-  override def onBadRequest(request: RequestHeader, error: String): Result = {
+  override def onBadRequest(request: RequestHeader, error: String): Future[Result] = {
     val msg = "Bad Request, parsing failed. " + error
     val status = Results.BadRequest
     val err = None
@@ -98,17 +139,18 @@ object Global extends GlobalSettings with AuthenticationAccessor with CryptoAcce
       case false => authentication = Some(auth)
     }
   }
+
   def getAuthentication() = {
-    val authen = authentication.get
+    val authen = authentication.getOrElse(throw new IllegalStateException("Authentication Provider not defined"))
     if (AuthenticationProviderConfig.authType != authen.authType) {
       try {
         val auth = AuthenticationProvider.get(AuthenticationProviderConfig.authType)
         authentication = Some(auth)
       } catch {
-        case e =>
+        case e: Throwable => logger.error("Unable to update authentication type to %s continuing to use %s".format
+            (AuthenticationProviderConfig.authType, authen.authType))
       }
     }
     authen
   }
-
 }

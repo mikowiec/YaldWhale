@@ -12,31 +12,32 @@
 </header>
 
 <div class="row">
-  <div class="span12">
-    @notice("message", Some("notice"))
+  <div class="col-md-12">
+    @notice("message", Some("info"))
     @notice("success")
-    @notice("error")
+    @notice("error", Some("danger"))
   </div>
 </div>
 
 <div class="row">
-  <div id="sidebar" class="span3">
+  <div id="sidebar" class="col-md-3">
     <ul id="sidenav" class="nav nav-list">
-      <li><a href="#support"><i class="icon-chevron-right"></i><strong>Support</strong></a></li>
+      <li><a href="#support"><i class="glyphicon glyphicon-chevron-right"></i><strong>Support</strong></a></li>
       <li><a href="#documentation">Collins Documentation</a></li>
+      <li><a href="#cql">Collins Query Language</a></li>
       <li><a href="#mailingList">Mailing List</a></li>
       <li><a href="#supportTicket">Github Issues</a></li>
-      <li><a href="#ipmi"><i class="icon-chevron-right"></i><strong>IPMI</strong></a></li>
+      <li><a href="#ipmi"><i class="glyphicon glyphicon-chevron-right"></i><strong>IPMI</strong></a></li>
       <li @if(htype == Help.IpmiError){class="active"}><a href="#ipmiError">General Error</a></li>
       <li @if(htype == Help.IpmiNoLight){class="active"}><a href="#ipmiNoLight">No IPMI Light</a></li>
       <li @if(htype == Help.IpmiUnreachable){class="active"}><a href="#ipmiUnreachable">IPMI Unreachable</a></li>
       <li @if(htype == Help.PowerManagementDisabled){class="active"}><a href="#powerManagementDisabled">Power Management Disabled</a></li>
-      <li><a href="#faq"><i class="icon-chevron-right"></i><strong>FAQ</strong></a></li>
+      <li><a href="#faq"><i class="glyphicon glyphicon-chevron-right"></i><strong>FAQ</strong></a></li>
       <li><a href="#assetState">Asset State</a></li>
     </ul>
   </div>
 
-  <div class="span9">
+  <div class="col-md-9">
 
     <section id="support" class="subsection">
       <div class="page-header">
@@ -48,6 +49,14 @@
 
         <p>
           There is comprehensive API, Configuration, and other documentation available at <a href="http://tumblr.github.com/collins/">http://tumblr.github.com/collins/</a>
+        </p>
+      </div>
+
+      <div id="cql" class="subsection">
+        <h3>Collins Query Language</h3>
+
+        <p>
+          Help on Collins Query language is available under the <a href="http://tumblr.github.io/collins/recipes.html#cql">recipes section</a> in the documentation
         </p>
       </div>
 
@@ -178,5 +187,5 @@
 
   </div>
 </div>
-<script src="@routes.Assets.at("javascripts/helpscroll.js")" type="text/javascript"></script>
+<script src="@controllers.routes.Assets.at("javascripts/helpscroll.js")" type="text/javascript"></script>
 }

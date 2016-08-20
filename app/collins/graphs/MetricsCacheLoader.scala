@@ -1,10 +1,15 @@
 package collins.graphs
 
-import models.{PageParams, SortDirection}
-import collins.solr.{CollinsQueryParser, AssetSearchQuery, AssetDocType}
-
 import play.api.Logger
+
 import com.google.common.cache.CacheLoader
+
+import collins.models.Asset
+import collins.models.shared.PageParams
+import collins.models.shared.SortDirection
+import collins.solr.AssetDocType
+import collins.solr.AssetSearchQuery
+import collins.solr.CollinsQueryParser
 
 case class MetricsQuery(query: String, metrics: Set[String])
 case class MetricsCacheLoader() extends CacheLoader[MetricsQuery, Set[String]] {
@@ -16,7 +21,7 @@ case class MetricsCacheLoader() extends CacheLoader[MetricsQuery, Set[String]] {
     val hasMatch = try {
       solrQueryMatches(query)
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.error("Error querying solr for %s".format(query), e)
         false
     }
@@ -39,14 +44,14 @@ case class MetricsCacheLoader() extends CacheLoader[MetricsQuery, Set[String]] {
         },
         expr => {
           val cq = AssetSearchQuery(expr, PageParams(0, 1, SortDirection.SortAsc, "TAG"))
-          cq.getPage().fold(
+          cq.getPage(Asset.findByTags(_)).fold(
             err => {
               logger.warn("Error executing CQL query: %s".format(err))
               false
             },
             page => if (page.size > 0) {
               logger.debug("Query (%s) had results".format(query))
-              true 
+              true
             } else {
               logger.debug("Query (%s) had no results".format(query))
               false

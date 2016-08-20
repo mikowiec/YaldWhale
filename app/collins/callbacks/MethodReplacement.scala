@@ -1,7 +1,4 @@
-package collins
-package callbacks
-
-import reflection.MethodHelper
+package collins.callbacks
 
 /**
  * Represents the results of a regular expression.
@@ -17,8 +14,7 @@ import reflection.MethodHelper
  * @param newValue the result of applying methodName on a class instance
  */
 case class MethodReplacement(
-  originalValue: String, methodName: String, newValue: String = ""
-) extends MethodHelper {
+    originalValue: String, methodName: String, newValue: String = "") extends MethodHelper {
 
   override val chattyFailures = true
 
@@ -29,7 +25,7 @@ case class MethodReplacement(
    * @return a MethodReplacement with an updated newValue on success, or an empty newValue on
    * failure
    */
-  def runMethod(v: AnyRef): MethodReplacement = {
+  def runMethod(v: CallbackDatum): MethodReplacement = {
     getMethod(methodName, v).flatMap { method =>
       invokeZeroArityMethod(method, v)
         .map(_.toString)

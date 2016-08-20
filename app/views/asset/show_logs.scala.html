@@ -1,30 +1,31 @@
-@(aa: models.asset.AllAttributes, user: User)(implicit flash: Flash, req: Request[AnyContent])
+@(aa: AllAttributes, user: User)(implicit flash: Flash, req: Request[AnyContent])
 
 <!-- Start Logs -->
 <div class="tab-pane" id="log-data">
+<section class="sectional">
+  <h3>Logs <small>Messages logged on this asset</small></h3>
   <script type="text/javascript">
     var logDataCols = [
-      {"mDataProp": "CREATED", "sWidth": "20%"},
-      {"mDataProp": "SOURCE", "sWidth": "10%", "bSortable": false},
-      {"mDataProp": "TYPE", "sWidth": "15%", "bSortable": false},
-      {"mDataProp": "MESSAGE", "sWidth": "55%", "bSortable": false}
+      {"mDataProp": "CREATED", "sWidth": "15%"},
+      {"mDataProp": "CREATED_BY", "sWidth": "5%", "bSortable": false},
+      {"mDataProp": "SOURCE", "sWidth": "5%", "bSortable": false},
+      {"mDataProp": "TYPE", "sWidth": "10%", "bSortable": false},
+      {"mDataProp": "MESSAGE", "sWidth": "65%", "bSortable": false}
     ];
+        
     var logDataLevels = [
       "NOTE", "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING"
     ];
     var logDataUri = "/asset/@aa.asset.tag/logs";
   </script>
-  <div class="row">
-    <div class="span12">
-      <form>
-        <button id="logRefresh" class="btn" data-interval-refresh="10;#log_data">Auto Refresh</button>
-      </form>
-    </div>
-  </div>
+  <form role="form">
+    <button id="logRefresh" class="btn btn-default pull-right" data-interval-refresh="10;#log_data">Auto Refresh</button>
+  </form>
   <table id="log_data" data-size="25" class="log-data table table-hover table-condensed" data-cols="logDataCols" data-source="javascript://logDataUri">
     <thead>
       <tr>
         <th>Date</th>
+        <th>User</th>
         <th>Source</th>
         <th>Level</th>
         <th>Message</th>
@@ -35,12 +36,14 @@
     <tfoot>
       <tr>
         <th>Date</th>
+        <th>User</th>
         <th>Source</th>
         <th>Level</th>
         <th>Message</th>
       </tr>
     </tfoot>
   </table>
+</section>
 </div>
 <script type="text/javascript">
     jQuery(document).ready(function ($) {

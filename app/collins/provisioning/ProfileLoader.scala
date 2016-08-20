@@ -1,15 +1,17 @@
 package collins.provisioning
 
-import collins.validation.File
-import com.tumblr.play.interop.{JProfile, ProvisionerProfileHelper}
+import java.io.{ File => IoFile }
+
+import scala.collection.immutable.SortedSet
 
 import play.api.Logger
-import com.google.common.cache.CacheLoader
-import scala.collection.immutable.SortedSet
-import java.io.{File => IoFile}
 
-case class ProfileLoader(profiles: Set[ProvisionerProfile])
-  extends CacheLoader[String, Set[ProvisionerProfile]]
+import com.google.common.cache.CacheLoader
+import com.tumblr.play.interop.ProvisionerProfileHelper
+
+import collins.validation.File
+
+case class ProfileLoader(profiles: Set[ProvisionerProfile]) extends CacheLoader[String, Set[ProvisionerProfile]]
 {
   private[this] val logger = Logger("collins.provisioning.ProfileLoader")
 
@@ -18,7 +20,7 @@ case class ProfileLoader(profiles: Set[ProvisionerProfile])
     try {
       ProfileLoader.fromFile(new IoFile(filename))
     } catch {
-      case e =>
+      case e: Throwable =>
         logger.error("There is a problem with the profiles file %s: %s".format(
           filename, e.getMessage
         ))

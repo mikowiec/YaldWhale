@@ -2,26 +2,32 @@
 
 ## Overview
 
-There is good documentation available at http://tumblr.github.com/collins. The
-documentation below is for developers or people setting up a new instance.
+Published [documentation](https://tumblr.github.io/collins) follows the most [recent release](https://tumblr.github.io/collins/downloads.html) of collins.
 
-The most recent production build of collins is available [here](http://tumblr.github.com/collins/downloads.html)
+For documentation on developing, building, general architecture and unreleased changes **please use the [wiki](https://github.com/tumblr/collins/wiki)**. This documentation is in flux, currently lacking and constantly being worked on.
 
-## Quickstart - Screencast
+All documentation links point to the most recent release.
 
-http://www.youtube.com/watch?v=rEyoS-iofK8
+[![Build Status](https://travis-ci.org/tumblr/collins.png?branch=master)](https://travis-ci.org/tumblr/collins)
+[![Dependency Status](https://www.versioneye.com/user/projects/555e7598393564000d040000/badge.svg?style=flat)](https://www.versioneye.com/user/projects/555e7598393564000d040000)
 
-## Quickstart - Building Collins
+## Quickstart
 
-http://tumblr.github.com/collins/#quickstart
+[Docker](https://tumblr.github.io/collins/#quickstart-docker)
 
-## Collins for Production
+[Use a Zip](https://tumblr.github.io/collins/#quickstart-zip)
 
-http://tumblr.github.com/collins/#quickstart-prod
+[Build from Source](https://tumblr.github.io/collins/#quickstart-source)
+
+## Docker Image
+
+Details about the docker container and building your own container are available in the [documentation](http://tumblr.github.io/collins/index.html#docker)
+
+tl;dr: ```docker run -p 9000:9000 tumblr/collins```
 
 ## License
 
-Copyright 2014 Tumblr, Inc.
+Copyright 2016 Tumblr, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,9 +46,10 @@ Email collins-sm@googlegroups.com or see the mailing list archive at https://gro
 ## Internal (Tumblr) docs
 
 To create a production zip and deploy to production:
+
   - ensure capistrano 2.15.5 is installed
-  - ensure net-ssh < 2.8.0 is installed - versions 2.8.0 and above are broken with our environment
-  - download and unpackage play @ ~/src/play-2.0.8 or define $PLAY_CMD with an alternate location
+  - ensure net-ssh < 2.7.0 is installed - versions 2.7.0 and above are broken with our environment
+  - download the minimal package for play activator 1.3.6 from [here](https://downloads.typesafe.com/typesafe-activator/1.3.6/typesafe-activator-1.3.6-minimal.zip). Unpackage it into ~/src/activator-1.3.6-minimal or define $PLAY_CMD with an alternate location
   - run `./scripts/package.sh` which will produce `target/collins.zip`
   - run `cap publish:collins` which will upload and link to release to `http://repo.tumblr.net:8888/collins.zip`
   - run `cap ewr01 deploy` to deploy to ewr01 and `cap d2 deploy` to deploy to d2

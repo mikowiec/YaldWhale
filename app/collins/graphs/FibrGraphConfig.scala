@@ -1,6 +1,7 @@
 package collins.graphs
 
-import util.config.{Configurable, ConfigValue}
+import collins.util.config.ConfigValue
+import collins.util.config.Configurable
 
 object FibrGraphConfig extends Configurable {
 
@@ -24,7 +25,7 @@ object FibrGraphConfig extends Configurable {
       val selector = metricConfig.selector
       val selectorString =
         selector + " AND HOSTNAME=\"%s\"".format(hostname)
-      set ++ GraphConfig.queryCache.get(MetricsQuery(selectorString, metricConfig.metrics))
+      set ++ GraphConfig.metricCache.get(MetricsQuery(selectorString, metricConfig.metrics))
     }
   }
 

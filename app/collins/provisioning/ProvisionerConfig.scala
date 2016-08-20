@@ -1,9 +1,13 @@
 package collins.provisioning
 
+import com.google.common.cache.CacheBuilderSpec
+
+import collins.models.AssetType
+import collins.models.Status
+import collins.util.concurrent.RateLimit
+import collins.util.config.ConfigValue
+import collins.util.config.Configurable
 import collins.validation.File
-import models.{AssetType, Status}
-import util.concurrent.RateLimit
-import util.config.{Configurable, ConfigValue}
 
 object ProvisionerConfig extends Configurable {
   override val namespace = "provisioner"
@@ -18,12 +22,14 @@ object ProvisionerConfig extends Configurable {
       case Some(a) => a.id
     }
   }.toSet
-  def cacheTimeout = getMilliseconds("cacheTimeout").getOrElse(30000L)
+  def cacheSpecification = getString("cacheSpecification", "expireAfterWrite=30s")
   def checkCommand = getString("checkCommand").filter(_.nonEmpty)
   def command = getString("command").filter(_.nonEmpty)
   def enabled = getBoolean("enabled", false)
   def profilesFile = getString("profiles")(ConfigValue.Required).filter(_.nonEmpty).get
   def rate = getString("rate", "1/10 seconds")
+  def checkCommandTimeoutMs = getMilliseconds("checkCommandTimeout").getOrElse(40000L)
+  def commandTimeoutMs = getMilliseconds("commandTimeout").getOrElse(40000L)
 
   override def validateConfig() {
     if (enabled) {
@@ -32,6 +38,7 @@ object ProvisionerConfig extends Configurable {
       tryOption("command", command.get)
       tryOption("profiles", profilesFile)
       File.requireFileIsReadable(profilesFile)
+      CacheBuilderSpec.parse(cacheSpecification)
       require(
         ProfileLoader.fromFile(profilesFile).size > 0,
         "Must have at least one profile in %s".format(profilesFile)
@@ -41,7 +48,7 @@ object ProvisionerConfig extends Configurable {
 
   protected def tryOption(name: String, fn: => AnyRef) {
     try fn catch {
-      case e =>
+      case e: Throwable =>
         throw globalError("provisioner.%s must be specified".format(name))
     }
   }

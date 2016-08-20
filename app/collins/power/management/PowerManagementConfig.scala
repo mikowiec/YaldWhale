@@ -1,9 +1,12 @@
-package collins.power
-package management
+package collins.power.management
 
-import models.{Asset, AssetType, Status}
-import util.MessageHelper
-import util.config.{Configurable, ConfigValue}
+import collins.models.Asset
+import collins.models.AssetType
+import collins.models.Status
+import collins.power.PowerAction
+import collins.util.MessageHelper
+import collins.util.config.ConfigValue
+import collins.util.config.Configurable
 
 object PowerManagementConfig extends Configurable {
 
@@ -27,7 +30,7 @@ object PowerManagementConfig extends Configurable {
   object Messages extends MessageHelper(namespace) {
     def assetStateAllowed(a: Asset) = message("disallowStatus", a.getStatusName)
     def actionAllowed(p: PowerAction) = message("disallowWhenAllocated", p.toString)
-    def assetTypeAllowed(a: Asset) = message("allowAssetTypes", a.getType().name)
+    def assetTypeAllowed(a: Asset) = message("allowAssetTypes", a.assetType.name)
   }
 
   def allowAssetTypes: Set[Int] = getStringSet("allowAssetTypes").map { name =>
@@ -47,8 +50,11 @@ object PowerManagementConfig extends Configurable {
   }
 
   def enabled = getBoolean("enabled", false)
-  def getClassOption = getString("class")
   def timeoutMs = getMilliseconds("timeout").getOrElse(10000L)
+  // allowAssetsWithoutIpmi (default: false) - If false, only allow power management of assets
+  // with valid IPMI details. If true, restricts templating of the IPMI commands to
+  // only <tag>.
+  def allowAssetsWithoutIpmi = getBoolean("allowAssetsWithoutIpmi").getOrElse(false)
 
   def powerOffCommand = command(PowerOffKey)
   def powerOnCommand = command(PowerOnKey)
@@ -66,9 +72,8 @@ object PowerManagementConfig extends Configurable {
       allowAssetTypes
       disallowStatus
       disallowWhenAllocated
-      enabled
-      getClassOption
       timeoutMs
+      allowAssetsWithoutIpmi
       RequiredKeys.foreach { key =>
         val cmd = command(key)
         require(cmd.nonEmpty, "powermanagement.commands.%s must not be empty".format(key))

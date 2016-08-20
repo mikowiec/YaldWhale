@@ -1,17 +1,20 @@
 package collins.solr
 
-import akka.actor._
-import akka.util.duration._
-import play.api.Logger
-import models.{Asset, AssetLog}
 import java.util.Collections
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicReference
 
-//TODO: refactor all this
+import scala.collection.JavaConverters.asScalaSetConverter
+
+import play.api.Logger
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
+
+import collins.models.Asset
+import collins.models.AssetLog
+
+import akka.actor.Actor
 
 /**
  * The SolrUpdater queues asset updates for batch updating.  Most importantly,
@@ -23,9 +26,8 @@ import java.util.concurrent.atomic.AtomicReference
 class AssetSolrUpdater extends Actor {
 
   private[this] def newAssetTagSet = Collections.newSetFromMap[String](
-    new ConcurrentHashMap[String,java.lang.Boolean]()
-  )
-  
+    new ConcurrentHashMap[String, java.lang.Boolean]())
+
   private[this] val assetTagsRef = new AtomicReference(newAssetTagSet)
   private[this] val logger = Logger("SolrUpdater")
 
@@ -45,18 +47,18 @@ class AssetSolrUpdater extends Actor {
     case asset: Asset =>
       assetTagsRef.get.add(asset.tag)
       if (scheduled.compareAndSet(false, true)) {
-        logger.debug("Scheduling update, saw %s".format(asset.tag))
-        context.system.scheduler.scheduleOnce(10 milliseconds, self, Reindex)
+        logger.debug("Scheduling reindex of %s within %s".format(asset.tag, SolrConfig.assetBatchUpdateWindow))
+        context.system.scheduler.scheduleOnce(SolrConfig.assetBatchUpdateWindow, self, Reindex)
       } else {
-        logger.trace("Not scheduling update, saw %s".format(asset.tag))
+        logger.trace("Ignoring already scheduled reindex of %s".format(asset.tag))
       }
     case Reindex =>
       if (scheduled.get == true) {
         val assetTags = assetTagsRef.getAndSet(newAssetTagSet).asScala.toSeq
         val indexTime = new Date
-        val assets = assetTags.map(t => Asset.findByTag(t)).flatMap(a => a)
+        val assets = assetTags.flatMap(Asset.findByTag(_))
         logger.debug("Got Reindex task, working on %d assets".format(assetTags.size))
-        Solr.plugin.foreach(_.updateAssets(assets, indexTime))
+        SolrHelper.updateAssets(assets, indexTime)
         scheduled.set(false)
       }
   }
@@ -65,7 +67,7 @@ class AssetSolrUpdater extends Actor {
 class AssetLogSolrUpdater extends Actor {
 
   def receive = {
-    case log: AssetLog => Solr.plugin.foreach{_.updateAssetLogs(List(log), new Date)}
+    case log: AssetLog => SolrHelper.updateAssetLogs(List(log), new Date)
   }
 
 }
